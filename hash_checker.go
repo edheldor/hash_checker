@@ -17,9 +17,9 @@ func main() {
 	params_len := len(params)
 
 	if params_len == 1 {
-		fmt.Println("Поддерживаются команды calc и check")
+		fmt.Println("Поддерживаются команды calc имя_файла и check имя_файла")
 	} else if params_len == 2 {
-		fmt.Println("Невозможно создать файл")
+		fmt.Println("Нужно больше аргументов")
 	} else if params_len == 3 {
 		if params[1] == "calc" {
 			file, err := os.Create(params[2])
@@ -29,6 +29,7 @@ func main() {
 			}
 			defer file.Close()
 			hashes := make(hashmap)
+			//полуаем путь директории в которой запускается файл
 			path, _ := os.Getwd()
 			filelist, err := FilePathWalkDir(path)
 			if err != nil {
@@ -63,7 +64,7 @@ func main() {
 			}
 
 		} else {
-			fmt.Println("Поддерживаются команды calc и check")
+			fmt.Println("Поддерживаются команды calc имя_файла и check имя_файла")
 		}
 
 	}

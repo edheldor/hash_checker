@@ -38,11 +38,15 @@ func main() {
 			}
 
 			for _, filepath := range filelist {
+				//сделать но горутинах, если не получится переписать этот и следующий циклы в один, чтобы не гонять по 2 раза
+
 				hashcalc(filepath, hashes)
 			}
 
-			for key, _ := range hashes {
-				towrite := key + " " + hashes[key] + "\n"
+			//Неожиданно чтение из мапа производится в случайном порядке, поэтому чтобы вывести в итоговый файл сортировку по алфавиту делаем следующее безобразие: итерируемся по слайсу filelist
+			//там все по алфавиту
+			for i := range filelist {
+				towrite := filelist[i] + " " + hashes[filelist[i]] + "\n"
 				file.WriteString(towrite)
 			}
 

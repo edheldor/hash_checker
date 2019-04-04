@@ -46,7 +46,7 @@ func main() {
 			//Неожиданно чтение из мапа производится в случайном порядке, поэтому чтобы вывести в итоговый файл сортировку по алфавиту делаем следующее безобразие: итерируемся по слайсу filelist
 			//там все по алфавиту
 			for i := range filelist {
-				towrite := filelist[i] + " " + hashes[filelist[i]] + "\n"
+				towrite := fmt.Sprintf("%s    %s \n", filelist[i], hashes[filelist[i]]) //4 пробела между путем к файлу и хэшем
 				file.WriteString(towrite)
 			}
 

@@ -7,14 +7,38 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
-type hashmap map[string]string
+type Hashmap struct {
+	mx sync.Mutex
+	m  map[string]string
+}
+
+func newHashmap() *Hashmap {
+	return &Hashmap{
+		m: make(map[string]string),
+	}
+}
+
+func (h *Hashmap) Load(key string) (string, bool) {
+	h.mx.Lock()
+	defer h.mx.Unlock()
+	val, ok := h.m[key]
+	return val, ok
+}
+
+func (h *Hashmap) Store(key string, value string) {
+	h.mx.Lock()
+	defer h.mx.Unlock()
+	h.m[key] = value
+}
 
 func main() {
 
 	params := os.Args
 	params_len := len(params)
+	hashes := newHashmap()
 
 	if params_len == 1 {
 		fmt.Println("Поддерживаются команды calc имя_файла и check имя_файла")
@@ -28,7 +52,7 @@ func main() {
 				os.Exit(1)
 			}
 			defer file.Close()
-			hashes := make(hashmap)
+
 			//полуаем путь директории в которой запускается файл
 			path, _ := os.Getwd()
 			filelist, err := FilePathWalkDir(path)
@@ -40,13 +64,19 @@ func main() {
 			for _, filepath := range filelist {
 				//сделать но горутинах, если не получится переписать этот и следующий циклы в один, чтобы не гонять по 2 раза
 
-				hashcalc(filepath, hashes)
+				go hashcalc(filepath, hashes)
 			}
 
 			//Неожиданно чтение из мапа производится в случайном порядке, поэтому чтобы вывести в итоговый файл сортировку по алфавиту делаем следующее безобразие: итерируемся по слайсу filelist
 			//там все по алфавиту
 			for i := range filelist {
-				towrite := fmt.Sprintf("%s    %s \n", filelist[i], hashes[filelist[i]]) //4 пробела между путем к файлу и хэшем
+				hash, ok := hashes.Load(filelist[i])
+				if ok {
+
+				} else {
+					hash = "Not yet calc"
+				}
+				towrite := fmt.Sprintf("%s    %s \n", filelist[i], hash) //4 пробела между путем к файлу и хэшем
 				file.WriteString(towrite)
 			}
 
@@ -75,7 +105,7 @@ func main() {
 
 }
 
-func hashcalc(filepath string, hashes hashmap) {
+func hashcalc(filepath string, hashes *Hashmap) {
 	f, err := os.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
@@ -87,7 +117,7 @@ func hashcalc(filepath string, hashes hashmap) {
 		log.Fatal(err)
 	}
 	hash := fmt.Sprintf("%x", h.Sum(nil))
-	hashes[filepath] = hash
+	hashes.Store(filepath, hash)
 
 }
 

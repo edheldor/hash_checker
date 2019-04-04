@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 )
 
 type Hashmap struct {
@@ -32,6 +33,17 @@ func (h *Hashmap) Store(key string, value string) {
 	h.mx.Lock()
 	defer h.mx.Unlock()
 	h.m[key] = value
+}
+
+func (h *Hashmap) Counter() int {
+	var counter int
+	h.mx.Lock()
+	defer h.mx.Unlock()
+	for i := range h.m {
+		_ = i
+		counter++
+	}
+	return counter
 }
 
 func main() {
@@ -62,20 +74,20 @@ func main() {
 			}
 
 			for _, filepath := range filelist {
-				//сделать но горутинах, если не получится переписать этот и следующий циклы в один, чтобы не гонять по 2 раза
 
 				go hashcalc(filepath, hashes)
+			}
+
+			// проверяем все ли горутины посчитали хеш
+			if len(filelist) != hashes.Counter() {
+				time.Sleep(100 * time.Millisecond)
 			}
 
 			//Неожиданно чтение из мапа производится в случайном порядке, поэтому чтобы вывести в итоговый файл сортировку по алфавиту делаем следующее безобразие: итерируемся по слайсу filelist
 			//там все по алфавиту
 			for i := range filelist {
-				hash, ok := hashes.Load(filelist[i])
-				if ok {
 
-				} else {
-					hash = "Not yet calc"
-				}
+				hash, _ := hashes.Load(filelist[i])
 				towrite := fmt.Sprintf("%s    %s \n", filelist[i], hash) //4 пробела между путем к файлу и хэшем
 				file.WriteString(towrite)
 			}

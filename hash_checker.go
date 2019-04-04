@@ -4,16 +4,17 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
-	//"path/filepath"
 )
 
+type hashmap map[string]string
+
 func main() {
+
 	params := os.Args
 	params_len := len(params)
-
-	fmt.Println(params_len)
 
 	if params_len == 1 {
 		fmt.Println("Поддерживаются команды calc и check")
@@ -27,13 +28,22 @@ func main() {
 				os.Exit(1)
 			}
 			defer file.Close()
+			hashes := make(hashmap)
 			path, _ := os.Getwd()
 			filelist, err := FilePathWalkDir(path)
 			if err != nil {
 				fmt.Println("Невозможно создать список всех файлов")
 				os.Exit(1)
 			}
-			print(filelist)
+
+			for _, filepath := range filelist {
+				hashcalc(filepath, hashes)
+			}
+
+			for key, _ := range hashes {
+				towrite := key + " " + hashes[key] + "\n"
+				file.WriteString(towrite)
+			}
 
 		} else if params[1] == "check" {
 			file, err := os.Open(params[2])
@@ -60,16 +70,19 @@ func main() {
 
 }
 
-type file struct {
-	name string
-	path string
-	hash string
-}
+func hashcalc(filepath string, hashes hashmap) {
+	f, err := os.Open(filepath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
 
-func (item *file) calclHash() {
-	hash := sha256.New()
-	hash.Write([]byte("HELLO"))
-	item.hash = fmt.Sprintf("%x", hash.Sum(nil))
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		log.Fatal(err)
+	}
+	hash := fmt.Sprintf("%x", h.Sum(nil))
+	hashes[filepath] = hash
 
 }
 

@@ -42,7 +42,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	if params_len == 1 {
-		fmt.Println("Поддерживаются команды calc имя_файла и check имя_файла")
+		fmt.Println("Поддерживается команда calc имя_файла")
 	} else if params_len == 2 {
 		fmt.Println("Нужно больше аргументов")
 	} else if params_len == 3 {
@@ -79,7 +79,7 @@ func main() {
 			}
 
 		} else {
-			fmt.Println("Поддерживаются команды calc имя_файла и check имя_файла")
+			fmt.Println("Поддерживается команда calc имя_файла")
 		}
 
 	}

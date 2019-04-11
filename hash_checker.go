@@ -8,7 +8,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 )
 
 type Hashmap struct {
@@ -35,22 +34,12 @@ func (h *Hashmap) Store(key string, value string) {
 	h.m[key] = value
 }
 
-func (h *Hashmap) Counter() int {
-	var counter int
-	h.mx.Lock()
-	defer h.mx.Unlock()
-	for i := range h.m {
-		_ = i
-		counter++
-	}
-	return counter
-}
-
 func main() {
 
 	params := os.Args
 	params_len := len(params)
 	hashes := newHashmap()
+	var wg sync.WaitGroup
 
 	if params_len == 1 {
 		fmt.Println("Поддерживаются команды calc имя_файла и check имя_файла")
@@ -74,39 +63,19 @@ func main() {
 			}
 
 			for _, filepath := range filelist {
-
-				go hashcalc(filepath, hashes)
+				wg.Add(1)
+				go hashcalc(filepath, hashes, &wg)
 			}
-
-			// проверяем все ли горутины посчитали хеш
-			if len(filelist) != hashes.Counter() {
-				time.Sleep(100 * time.Millisecond)
-			}
-
+			// ждем завершения горутин
+			wg.Wait()
 			//Неожиданно чтение из мапа производится в случайном порядке, поэтому чтобы вывести в итоговый файл сортировку по алфавиту делаем следующее безобразие: итерируемся по слайсу filelist
 			//там все по алфавиту
+
 			for i := range filelist {
 
 				hash, _ := hashes.Load(filelist[i])
 				towrite := fmt.Sprintf("%s    %s \n", filelist[i], hash) //4 пробела между путем к файлу и хэшем
 				file.WriteString(towrite)
-			}
-
-		} else if params[1] == "check" {
-			file, err := os.Open(params[2])
-			if err != nil {
-				fmt.Println("Невозможно открыть файл")
-			}
-			defer file.Close()
-
-			data := make([]byte, 64)
-
-			for {
-				n, err := file.Read(data)
-				if err == io.EOF {
-					break
-				}
-				fmt.Println(string(data[:n]))
 			}
 
 		} else {
@@ -117,7 +86,8 @@ func main() {
 
 }
 
-func hashcalc(filepath string, hashes *Hashmap) {
+func hashcalc(filepath string, hashes *Hashmap, wg *sync.WaitGroup) {
+
 	f, err := os.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
@@ -130,7 +100,7 @@ func hashcalc(filepath string, hashes *Hashmap) {
 	}
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 	hashes.Store(filepath, hash)
-
+	wg.Done()
 }
 
 func FilePathWalkDir(root string) ([]string, error) {

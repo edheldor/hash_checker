@@ -87,7 +87,7 @@ func main() {
 }
 
 func hashcalc(filepath string, hashes *Hashmap, wg *sync.WaitGroup) {
-
+	defer wg.Done()
 	f, err := os.Open(filepath)
 	if err != nil {
 		log.Fatal(err)
@@ -100,7 +100,7 @@ func hashcalc(filepath string, hashes *Hashmap, wg *sync.WaitGroup) {
 	}
 	hash := fmt.Sprintf("%x", h.Sum(nil))
 	hashes.Store(filepath, hash)
-	wg.Done()
+
 }
 
 func FilePathWalkDir(root string) ([]string, error) {
